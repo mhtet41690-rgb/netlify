@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MHWarp Generator - Netlify</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f2f5; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 350px; text-align: center; }
+        button { background: #00ad9f; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; cursor: pointer; font-size: 16px; }
+        #result { margin-top: 20px; text-align: left; background: #eee; padding: 10px; border-radius: 5px; display: none; word-break: break-all; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>MHWarp Netlify</h2>
+        <button id="genBtn">Generate Warp Key</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('genBtn').onclick = async () => {
+            const res = await fetch('/.netlify/functions/warp-gen', { method: 'POST' });
+            const data = await res.json();
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('result').innerText = JSON.stringify(data, null, 2);
+        };
+    </script>
+</body>
+</html>
