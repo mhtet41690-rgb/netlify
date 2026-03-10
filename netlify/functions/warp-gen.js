@@ -1,7 +1,9 @@
 const axios = require('axios');
+const crypto = require('crypto');
 
 exports.handler = async (event, context) => {
-    // Android App ထံမှ Public Key ကို လက်ခံခြင်း
+    // ၁။ WireGuard ပုံစံတူ Public Key တစ်ခုကို Generate လုပ်ခြင်း
+    // (မှတ်ချက် - App ကနေ ပို့လာရင်တော့ App Key ကို သုံးပါမည်)
     let publicKey = "";
     
     if (event.body) {
@@ -9,14 +11,13 @@ exports.handler = async (event, context) => {
             const body = JSON.parse(event.body);
             publicKey = body.key;
         } catch (e) {
-            // JSON parse မရလျှင် error ပြန်မည်
-            return { statusCode: 400, body: JSON.stringify({ error: "Invalid JSON body" }) };
+            // Error handling
         }
     }
 
-    // Public Key မပါလာလျှင် default တစ်ခု သတ်မှတ်ပေးထားပါ (စမ်းသပ်ရန်အတွက်သာ)
+    // Public Key မပါလာလျှင် သို့မဟုတ် Website ကနေ နှိပ်လျှင် Key အသစ်တစ်ခု ဆောက်ပေးမည်
     if (!publicKey) {
-        publicKey = "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo="; 
+        publicKey = crypto.randomBytes(32).toString('base64');
     }
 
     try {
@@ -25,7 +26,7 @@ exports.handler = async (event, context) => {
             url: 'https://api.cloudflareclient.com/v0a2158/reg',
             headers: {
                 'Content-Type': 'application/json',
-                'User-Agent': 'okhttp/4.12.0', // Standard User-Agent သုံးထားပါသည်
+                'User-Agent': 'okhttp/4.12.0',
             },
             data: {
                 key: publicKey,
@@ -41,14 +42,13 @@ exports.handler = async (event, context) => {
         return {
             statusCode: 200,
             headers: {
-                "Access-Control-Allow-Origin": "*", // App မှ လှမ်းခေါ်နိုင်ရန်
+                "Access-Control-Allow-Origin": "*",
                 "Content-Type": "application/json"
             },
             body: JSON.stringify(response.data)
         };
 
     } catch (error) {
-        // Cloudflare ထံမှ ပြန်လာသော Error အသေးစိတ်ကို ကြည့်ရန်
         const errorData = error.response ? error.response.data : error.message;
         return {
             statusCode: error.response ? error.response.status : 500,
