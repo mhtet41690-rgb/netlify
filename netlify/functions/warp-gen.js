@@ -2,20 +2,15 @@ const axios = require('axios');
 const crypto = require('crypto');
 
 exports.handler = async (event, context) => {
-    // ၁။ WireGuard ပုံစံတူ Public Key တစ်ခုကို Generate လုပ်ခြင်း
-    // (မှတ်ချက် - App ကနေ ပို့လာရင်တော့ App Key ကို သုံးပါမည်)
     let publicKey = "";
     
     if (event.body) {
         try {
             const body = JSON.parse(event.body);
             publicKey = body.key;
-        } catch (e) {
-            // Error handling
-        }
+        } catch (e) {}
     }
 
-    // Public Key မပါလာလျှင် သို့မဟုတ် Website ကနေ နှိပ်လျှင် Key အသစ်တစ်ခု ဆောက်ပေးမည်
     if (!publicKey) {
         publicKey = crypto.randomBytes(32).toString('base64');
     }
@@ -39,19 +34,32 @@ exports.handler = async (event, context) => {
             }
         });
 
+        // --- ဤနေရာတွင် Endpoint ကို စိတ်ကြိုက်ပြင်ဆင်ပါ ---
+        const resultData = response.data;
+        
+        // Cloudflare ကပေးတဲ့ host နေရာမှာ မိမိစိတ်ကြိုက် IP:Port ကို အစားထိုးလိုက်ခြင်း
+        const customEndpoint = "162.159.192.1:500"; 
+        
+        if (resultData.config && resultData.config.peers && resultData.config.peers[0]) {
+            resultData.config.peers[0].endpoint.host = customEndpoint;
+            resultData.config.peers[0].endpoint.v4 = customEndpoint;
+        }
+        // -------------------------------------------
+
         return {
             statusCode: 200,
             headers: {
                 "Access-Control-Allow-Origin": "*",
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify(response.data)
+            body: JSON.stringify(resultData)
         };
 
     } catch (error) {
         const errorData = error.response ? error.response.data : error.message;
         return {
             statusCode: error.response ? error.response.status : 500,
+            headers: { "Access-Control-Allow-Origin": "*" },
             body: JSON.stringify({
                 error: "Cloudflare API Error",
                 details: errorData
